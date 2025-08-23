@@ -1,0 +1,11 @@
+# TNT激活到爆炸的时间（单位：tick，20tick=1秒）
+fuse-ticks: 40
+
+# 爆炸强度（原版TNT默认为4.0）
+explosion-power: 4.0
+
+# 是否产生火焰
+cause-fire: false
+
+# 是否造成伤害（包括方块和实体）
+cause-damage: true

@@ -1,0 +1,15 @@
+name: AutoTNT
+version: 1.0
+main: fun.ceroxe.AutoTNT
+api-version: 1.21
+commands:
+  autotnt:
+    description: 重载AutoTNT插件配置
+    usage: /autotnt reload
+permissions:
+  autotnt.use:
+    description: 允许放置自动点燃的TNT
+    default: op
+  autotnt.reload:
+    description: 允许重载插件配置
+    default: op
