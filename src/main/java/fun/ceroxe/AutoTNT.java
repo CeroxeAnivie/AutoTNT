@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.command.Command;
@@ -18,7 +19,6 @@ import org.bukkit.metadata.FixedMetadataValue;
 
 public class AutoTNT extends JavaPlugin implements Listener {
 
-    private FileConfiguration config;
     private double explosionPower;
     private int fuseTicks;
     private boolean causeFire;
@@ -26,10 +26,8 @@ public class AutoTNT extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        // 保存默认配置
         saveDefaultConfig();
         reloadPluginConfig();
-        // 注册事件监听器
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("AutoTNT 插件已启用！");
     }
@@ -39,10 +37,9 @@ public class AutoTNT extends JavaPlugin implements Listener {
         getLogger().info("AutoTNT 插件已禁用！");
     }
 
-    // 重新加载配置
     private void reloadPluginConfig() {
         reloadConfig();
-        config = getConfig();
+        FileConfiguration config = getConfig();
         explosionPower = config.getDouble("explosion-power", 4.0);
         fuseTicks = config.getInt("fuse-ticks", 40);
         causeFire = config.getBoolean("cause-fire", false);
@@ -54,42 +51,51 @@ public class AutoTNT extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
 
-        // 检查放置的是TNT且玩家有权限
         if (block.getType() == Material.TNT && player.hasPermission("autotnt.use")) {
-            Location loc = block.getLocation().add(0.5, 0, 0.5); // 中心位置
+            Location loc = block.getLocation().add(0.5, 0, 0.5);
             World world = loc.getWorld();
 
-            // 取消方块放置并生成点燃的TNT
-            event.setCancelled(true);
-            block.setType(Material.AIR);
+            event.setCancelled(true); // 取消方块放置
 
-            // 生成TNT实体
+            // 修复：减少玩家手持物品的数量
+            ItemStack itemInHand = player.getInventory().getItemInMainHand();
+            if (itemInHand.getType() == Material.TNT) {
+                // 非创造模式才减少物品
+                if (!player.getGameMode().equals(GameMode.CREATIVE)) {
+                    int amount = itemInHand.getAmount();
+                    if (amount > 1) {
+                        itemInHand.setAmount(amount - 1);
+                    } else {
+                        player.getInventory().setItemInMainHand(null);
+                    }
+                }
+            }
+
+            // 生成点燃的TNT
             TNTPrimed tnt = (TNTPrimed) world.spawnEntity(loc, EntityType.TNT);
-            tnt.setFuseTicks(fuseTicks); // 设置自定义引信时间
-            tnt.setMetadata("AutoTNT", new FixedMetadataValue(this, true)); // 添加元数据标记
+            tnt.setFuseTicks(fuseTicks);
+            tnt.setMetadata("AutoTNT", new FixedMetadataValue(this, true));
         }
     }
 
     @EventHandler
     public void onExplosionPrime(ExplosionPrimeEvent event) {
-        // 检查是否为插件生成的TNT
         if (event.getEntity() instanceof TNTPrimed && event.getEntity().hasMetadata("AutoTNT")) {
-            event.setRadius((float) explosionPower); // 设置爆炸威力
-            event.setFire(causeFire); // 设置是否产生火焰
+            event.setRadius((float) explosionPower);
+            event.setFire(causeFire);
         }
     }
 
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {
-        // 检查是否为插件生成的TNT
         if (event.getEntity() instanceof TNTPrimed && event.getEntity().hasMetadata("AutoTNT")) {
             if (!causeDamage) {
-                event.setCancelled(true); // 取消爆炸伤害
+                event.setCancelled(true);
                 event.getLocation().getWorld().createExplosion(
                         event.getLocation(),
                         (float) explosionPower,
                         causeFire,
-                        false // 不破坏方块
+                        false
                 );
             }
         }
