@@ -1,7 +1,7 @@
 name: AutoTNT
-version: 1.1
+version: 1.2
 main: fun.ceroxe.AutoTNT
-api-version: 1.21
+api-version: 1.13
 commands:
   autotnt:
     description: 重载AutoTNT插件配置
